@@ -1,0 +1,165 @@
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["fullTextSearch"]
+
+}
+
+datasource db {
+  provider    = "postgresql"
+  url         = env("DATABASE_URL")
+}
+
+
+model User {
+  id        Int      @id @default(autoincrement())
+  firstName String
+  lastName  String
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  host         Host?
+  bookings     Booking[]
+  reviews      Review[]
+}
+
+model Host {
+  id           Int      @id @default(autoincrement())
+  userId       Int      @unique 
+  mobileNumber String
+  country      String
+  address      String
+  overview     String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user         User     @relation(fields: [userId], references: [id])
+  listings     Listing[]
+ 
+}
+
+model Listing {
+  id                   Int          @id @default(autoincrement())
+  title                String
+  summary              String?       
+  categoryId           Int?         
+  typeId               Int?         
+  latitude             Decimal?       @db.Decimal(9, 6)
+  longitude            Decimal?       @db.Decimal(9, 6)
+  pricePerNight        Decimal?       @db.Decimal(10, 2)
+  city                 String?
+  country              String?
+  numberOfBeds         Int          @default(1)
+  numberOfRooms        Int          @default(1)
+  numberOfBathrooms    Int          @default(1)
+  minNumberOfNights    Int          @default(5)
+  maxNumberOfGuests    Int          @default(10)
+  numberOfReviews      Int          @default(0)
+  averageRating        Decimal      @db.Decimal(10, 2) @default(0)
+  statusId             Int          @default(1)
+  hostId               Int
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
+
+  category             ListingCategory? @relation(fields: [categoryId], references: [id])
+  type                 ListingType?     @relation(fields: [typeId], references: [id])
+  images               ListingImage[]
+  amenities            AmenityOnListing[]      
+  bookings             Booking[]
+  host                 Host             @relation(fields: [hostId], references: [id] , onDelete: Cascade)
+  status               ListingStatus    @relation(fields: [statusId], references: [id])
+  reviews              Review[]
+
+}
+
+model ListingStatus {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  listings  Listing[]
+}
+
+
+model ListingCategory {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  listings  Listing[]
+  
+}
+
+model ListingType {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+
+  listings  Listing[]
+}
+
+model ListingImage {
+  id        Int      @id @default(autoincrement())
+  listingId Int     
+  imageUrl  String
+  
+  listing   Listing  @relation(fields: [listingId], references: [id] , onDelete: Cascade)
+}
+
+model Amenity {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  listings  AmenityOnListing[] 
+}
+
+model AmenityOnListing {
+  listing      Listing     @relation(fields: [listingId], references: [id] , onDelete: Cascade)
+  listingId    Int 
+  amenity      Amenity @relation(fields: [amenityId], references: [id] , onDelete: Cascade)
+  amenityId    Int 
+
+  @@id([listingId, amenityId])
+
+}
+
+model Booking { 
+  id        Int      @id @default(autoincrement())
+  listingId Int
+  userId    Int
+  checkIn  DateTime
+  checkOut DateTime
+  numberOfChildren Int
+  numberOfAdults Int
+  numberOfInfants Int
+  statusId Int     @default(1)
+  total    Float
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+
+  listing  Listing  @relation(fields: [listingId], references: [id] , onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id])
+  status   BookingStatus @relation(fields: [statusId], references: [id])
+  review    Review?
+  
+
+}
+
+model BookingStatus {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  bookings  Booking[]
+}
+
+model Review {
+  id        Int      @id @default(autoincrement())
+  listingId Int
+  bookingId Int      @unique
+  userId    Int
+  rating    Int
+  comment   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  listing  Listing  @relation(fields: [listingId], references: [id] , onDelete: Cascade)
+  booking  Booking  @relation(fields: [bookingId], references: [id] , onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id])
+
+
+}
